@@ -1,0 +1,769 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Forehead Charades</title>
+<meta name="description" content="A party guessing game for phones. Everyone adds their own words; one player holds the word to their forehead while the others give hints.">
+<meta name="theme-color" content="#F6F4F0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14110E" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Charades">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;600;700&display=swap">
+<style>
+/* Layout: one screen at a time; a soft gold-lilac-sky glow is the brand, the word is always the biggest thing on screen */
+:root{
+  --bg:#F6F4F0; --bg2:#FFFFFF; --card:#ECE8E1; --ink:#14110E; --muted:#8C8377;
+  --gold:#C9862F; --gold-hi:#E8A94A; --on-gold:#14110E;
+  --go:#8EC5FF; --no:#B79CED; --go-ink:#2C74C4; --no-ink:#7550C2;
+  --line:rgba(20,17,14,.10); --glow-a:.85;
+  --display:"Bricolage Grotesque", "Arial Black", system-ui, sans-serif;
+  --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#14110E; --bg2:#1E1915; --card:#2A241F; --ink:#F6F4F0; --muted:#A99F94;
+  --gold:#E8A94A; --gold-hi:#C9862F; --on-gold:#14110E;
+  --go-ink:#8EC5FF; --no-ink:#C9B4F4; --line:rgba(246,244,240,.12); --glow-a:.55; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#14110E; --bg2:#1E1915; --card:#2A241F; --ink:#F6F4F0; --muted:#A99F94;
+  --gold:#E8A94A; --gold-hi:#C9862F; --on-gold:#14110E;
+  --go-ink:#8EC5FF; --no-ink:#C9B4F4; --line:rgba(246,244,240,.12); --glow-a:.55; color-scheme:dark }
+html,body{height:100%}
+*{box-sizing:border-box}
+body{margin:0}
+[hidden]{display:none!important}
+img,svg{max-width:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+#app{min-height:100%;box-sizing:border-box;padding-top:max(20px, env(safe-area-inset-top, 0px));padding-bottom:max(28px, env(safe-area-inset-bottom, 0px));padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:clamp(40px,11vw,60px);font-weight:800;line-height:.95}
+h2{font-size:28px;font-weight:800;line-height:1.05}
+h3{font-size:18px;font-weight:600}
+p{margin:0;line-height:1.5;color:var(--muted)}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.stack{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{display:block;flex:none;border-radius:24%;box-shadow:0 6px 18px rgba(183,156,237,.35)}
+.glow{position:relative;border-radius:24px;overflow:hidden;padding:26px 20px 22px;background:var(--bg2);border:1px solid var(--line);display:flex;flex-direction:column;gap:14px}
+.glow:before{content:"";position:absolute;inset:-40%;background:
+  radial-gradient(40% 35% at 22% 40%, rgba(232,169,74,var(--glow-a)), transparent 70%),
+  radial-gradient(38% 34% at 55% 70%, rgba(183,156,237,var(--glow-a)), transparent 70%),
+  radial-gradient(36% 32% at 85% 30%, rgba(142,197,255,var(--glow-a)), transparent 70%);
+  filter:blur(28px);pointer-events:none}
+.glow > *{position:relative}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:54px;padding:0 22px;border-radius:16px;font-weight:700;font-size:17px;background:var(--gold);color:var(--on-gold);transition:transform .08s}
+.btn:active{transform:scale(.97)}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.btn.big{min-height:68px;font-size:20px;font-family:var(--display);font-weight:800}
+.btn.alt{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.btn.ghost{background:transparent;color:var(--muted);min-height:44px;font-weight:600;font-size:15px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:13px;font-weight:600;color:var(--muted)}
+input[type=text]{font:inherit;font-size:18px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:14px;min-height:52px;padding:0 16px;width:100%;box-sizing:border-box}
+input::placeholder{color:var(--muted);opacity:.8}
+.code-input{text-transform:uppercase;letter-spacing:.3em;font-family:var(--display);font-weight:800;text-align:center}
+.panel{background:var(--bg2);border:1px solid var(--line);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.notice{background:rgba(232,169,74,.12);border:1px solid rgba(201,134,47,.35);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.45;color:var(--ink)}
+.err{color:var(--no-ink);font-size:14px;font-weight:600}
+.divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:13px}
+.divider:before,.divider:after{content:"";flex:1;height:1px;background:var(--line)}
+.roomcode{font-family:var(--display);font-weight:800;font-size:clamp(48px,16vw,76px);letter-spacing:.12em;line-height:1;color:var(--ink)}
+.conn{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.conn i{width:8px;height:8px;border-radius:50%;background:var(--go)}
+.conn.off i{background:var(--no)}
+.players{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.players li{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:999px;padding:8px 14px;font-weight:600}
+.players li.me{box-shadow:inset 0 0 0 2px var(--gold)}
+.players li button{color:var(--muted);font-size:18px;line-height:1;padding:0 2px}
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chip{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 14px;border-radius:14px;background:var(--card);border:2px solid transparent;text-align:left}
+.chip b{font-size:15px}
+.chip span{font-size:12px;color:var(--muted)}
+.chip[aria-pressed=true]{border-color:var(--gold);background:rgba(232,169,74,.14)}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border-radius:14px;padding:4px;gap:4px}
+.seg button{min-height:44px;border-radius:10px;font-weight:700;font-variant-numeric:tabular-nums}
+.seg button[aria-pressed=true]{background:var(--gold);color:var(--on-gold)}
+.board{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.board li{display:flex;justify-content:space-between;align-items:center;padding:10px 2px;border-bottom:1px solid var(--line);font-weight:600}
+.board li:last-child{border-bottom:0}
+.board .pts{font-family:var(--display);font-weight:800;font-size:22px;font-variant-numeric:tabular-nums}
+.board .lead .pts{color:var(--gold)}
+.board .gone{color:var(--muted);font-weight:400;font-size:13px;margin-left:6px}
+.center{text-align:center;align-items:center}
+.hero-name{font-family:var(--display);font-weight:800;font-size:clamp(44px,13vw,72px);line-height:.95;color:var(--gold);word-break:break-word}
+.steps{margin:0;padding-left:20px;color:var(--muted);line-height:1.6;text-align:left}
+.steps b.ok{color:var(--go-ink)} .steps b.no{color:var(--no-ink)}
+.results{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.results li{padding:6px 12px;border-radius:999px;font-weight:600;font-size:15px}
+.results .k1{background:rgba(142,197,255,.25);color:var(--go-ink)}
+.results .k0{background:rgba(183,156,237,.22);color:var(--no-ink);text-decoration:line-through;text-decoration-thickness:1px}
+.bigstat{font-family:var(--display);font-weight:800;font-size:64px;line-height:1;color:var(--go-ink);font-variant-numeric:tabular-nums}
+details.a2hs{background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+details.a2hs summary{cursor:pointer;font-weight:700;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.a2hs summary::-webkit-details-marker{display:none}
+details.a2hs summary:after{content:"+";font-size:20px;color:var(--muted)}
+details.a2hs[open] summary:after{content:"–"}
+details.a2hs ol{margin:10px 0 0;padding-left:20px;color:var(--muted);line-height:1.6;font-size:14px}
+details.a2hs b{color:var(--ink)}
+
+/* Guesser's forehead screen */
+.forehead{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);user-select:none;-webkit-user-select:none;touch-action:manipulation;overflow:hidden}
+.zone{position:absolute;top:0;bottom:0;width:50%;display:flex;align-items:flex-end;justify-content:center;padding-bottom:max(18px,env(safe-area-inset-bottom,0px))}
+.zone span{font-weight:700;font-size:15px;letter-spacing:.1em;text-transform:uppercase;padding:8px 16px;border-radius:999px}
+.zone-pass{left:0;background:linear-gradient(90deg,rgba(183,156,237,.32),transparent 70%)}
+.zone-pass span{color:var(--no-ink);background:rgba(183,156,237,.2)}
+.zone-ok{right:0;background:linear-gradient(270deg,rgba(142,197,255,.34),transparent 70%)}
+.zone-ok span{color:var(--go-ink);background:rgba(142,197,255,.22)}
+.fh-top{position:absolute;top:max(12px,env(safe-area-inset-top,0px));left:0;right:0;display:flex;justify-content:center;align-items:center;gap:14px;pointer-events:none;z-index:2}
+.fh-word{position:relative;z-index:1;pointer-events:none;font-family:var(--display);font-weight:800;line-height:1;text-align:center;padding:0 6vw;word-break:break-word;text-wrap:balance}
+.fh-sub{position:relative;z-index:1;pointer-events:none;margin-top:14px;color:var(--muted);font-weight:600}
+.timer{font-family:var(--display);font-weight:800;font-size:30px;font-variant-numeric:tabular-nums;background:var(--card);border-radius:999px;padding:4px 16px;min-width:2.2em;text-align:center}
+.timer.low{background:var(--no);color:#14110E}
+.fh-count{font-weight:700;color:var(--go-ink)}
+.fh-x{position:absolute;top:max(10px,env(safe-area-inset-top,0px));left:max(10px,env(safe-area-inset-left,0px));z-index:3;color:var(--muted);font-size:14px;font-weight:600;padding:10px 12px;border-radius:12px;background:var(--card)}
+.countdown{font-family:var(--display);font-weight:800;font-size:min(40vh,40vw);line-height:1;color:var(--gold)}
+.tiltnote{position:absolute;top:max(14px,env(safe-area-inset-top,0px));right:max(14px,env(safe-area-inset-right,0px));font-size:12px;color:var(--go-ink);font-weight:700;letter-spacing:.08em;text-transform:uppercase;z-index:2}
+
+/* Hint-giver screen */
+.hintcard{background:var(--ink);color:var(--bg);border-radius:24px;padding:28px 18px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;transform:rotate(-1deg)}
+.hintcard .eyebrow,.hintcard .catlabel{color:var(--gold-hi)}
+.hint-word{font-family:var(--display);font-weight:800;line-height:1;word-break:break-word;text-wrap:balance}
+.catlabel{font-size:13px;font-weight:700}
+.hint-top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.hint-top b{display:block;font-family:var(--display);font-size:24px;font-weight:800}
+
+#flash{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:50;transition:opacity .35s}
+#flash.ok{background:var(--go);opacity:.92;transition:none}
+#flash.no{background:var(--no);opacity:.92;transition:none}
+#flash .fl{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:min(18vw,120px);color:#14110E}
+@media (prefers-reduced-motion:reduce){.btn{transition:none}#flash{transition:none}.hintcard{transform:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="flash"><div class="fl"></div></div>
+<script src="vendor/supabase.js"></script>
+<script>
+(function(){
+"use strict";
+
+const ROUND_OPTS = [30,45,60,90];
+const PHASES = ["lobby","ready","playing","turnover","final"];
+const MAX_WORDS = 10, MAX_LEN = 30, MIN_POOL = 3;
+
+/* ---------- Helpers ---------- */
+const $ = s => document.querySelector(s);
+const app = $("#app");
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} };
+const rid = () => "p" + Math.random().toString(36).slice(2, 12);
+const PID_RE = /^p[a-z0-9]{1,16}$/;
+const cleanWord = w => String(w || "").replace(/\s+/g, " ").trim().slice(0, MAX_LEN);
+const cleanWords = a => Array.isArray(a) ? a.map(cleanWord).filter(Boolean).slice(0, MAX_WORDS) : [];
+function fitSize(text, wFrac, hFrac, max){
+  text = String(text);
+  const longest = Math.max(...text.split(/\s+/).map(w => w.length), 1);
+  const perLine = Math.max(longest, Math.ceil(text.length / (text.length > 18 ? 3 : 2)));
+  return Math.max(26, Math.min(window.innerWidth * wFrac / (perLine * 0.6), window.innerHeight * hFrac, max));
+}
+
+/* ---------- State ---------- */
+let me = lsGet("fc-me", null);
+if(!me || typeof me.pid !== "string" || !PID_RE.test(me.pid)) me = { pid: rid(), name: "" };
+lsSet("fc-me", me);
+let myWords = cleanWords(lsGet("fc-words", []));
+
+let screen = "home";          // home | game | words (local word entry)
+let mode = null;              // online | local
+let editPid = null;           // local mode: whose words are being entered
+let room = null, roomStatus = "wait", roomCode = "", joinedAt = 0;
+let peersList = [], connected = true, homeErr = "";
+let S = defaultState();
+
+function defaultState(){
+  return { v:0, w:"", phase:"lobby", secs:60, pool:{}, used:[], cur:-1,
+           guesser:null, startAt:0, endsAt:0, log:[], scores:{}, turnNo:0, lp:[] };
+}
+function cleanScores(sc){
+  const out = {};
+  if(sc && typeof sc === "object") Object.keys(sc).slice(0, 30).forEach(k => {
+    const e = sc[k];
+    if(PID_RE.test(k) && e && typeof e === "object") out[k] = { n: String(e.n || "Player").slice(0, 16), s: Math.max(0, Math.floor(Number(e.s) || 0)) };
+  });
+  return out;
+}
+function cleanPool(p){
+  const out = {};
+  if(p && typeof p === "object") Object.keys(p).slice(0, 16).forEach(k => { if(PID_RE.test(k)){ const ws = cleanWords(p[k]); if(ws.length) out[k] = ws; } });
+  return out;
+}
+const int = (x, d) => Number.isFinite(Number(x)) ? Math.floor(Number(x)) : d;
+function clean(st){
+  if(!st || typeof st !== "object" || typeof st.v !== "number" || !PHASES.includes(st.phase)) return null;
+  return {
+    v: st.v, w: String(st.w || ""), phase: st.phase,
+    secs: ROUND_OPTS.includes(st.secs) ? st.secs : 60,
+    pool: cleanPool(st.pool),
+    used: Array.isArray(st.used) ? st.used.slice(-200).map(x => int(x, -1)).filter(x => x >= 0) : [],
+    cur: int(st.cur, -1),
+    guesser: typeof st.guesser === "string" ? st.guesser : null,
+    startAt: Number(st.startAt) || 0, endsAt: Number(st.endsAt) || 0,
+    log: Array.isArray(st.log) ? st.log.slice(-40).filter(Array.isArray).map(e => [int(e[0], -1), e[1] ? 1 : 0]) : [],
+    scores: cleanScores(st.scores), turnNo: int(st.turnNo, 0), lp: []
+  };
+}
+const better = (a, b) => a.v > b.v || (a.v === b.v && a.w > b.w);
+
+/* The hat: every suggested word, in a fixed order every phone agrees on */
+let poolCache = { key:null, list:[] };
+function poolList(){
+  if(poolCache.key !== S.pool){
+    const list = [];
+    Object.keys(S.pool).sort().forEach(a => S.pool[a].forEach(w => list.push({ w, a })));
+    poolCache = { key: S.pool, list };
+  }
+  return poolCache.list;
+}
+const wordOf = g => (poolList()[g] || {}).w || "";
+const authorOf = g => (poolList()[g] || {}).a || null;
+function pick(used, guesser){
+  const list = poolList();
+  if(!list.length) return { cur: -1, used };
+  const idx = list.map((_, i) => i);
+  let cand = idx.filter(i => list[i].a !== guesser && !used.includes(i));
+  if(!cand.length){ used = []; cand = idx.filter(i => list[i].a !== guesser); } // hat empty: put everyone else's words back
+  if(!cand.length) cand = idx;                                                    // only their own words exist
+  const cur = cand[Math.floor(Math.random() * cand.length)];
+  return { cur, used: [...used, cur] };
+}
+
+function players(){
+  if(mode === "local") return S.lp.map(p => ({ pid: p.pid, name: p.name, n: p.sw.length }));
+  const map = new Map();
+  for(const p of peersList){
+    const pr = p.presence || {};
+    if(pr.code !== roomCode || typeof pr.pid !== "string" || !PID_RE.test(pr.pid) || !pr.name) continue;
+    const j = Number(pr.j) || 0, prev = map.get(pr.pid);
+    if(!prev || j < prev.j) map.set(pr.pid, { pid: pr.pid, name: String(pr.name).slice(0, 16), j, n: cleanWords(pr.sw).length, sw: cleanWords(pr.sw) });
+  }
+  map.set(me.pid, { pid: me.pid, name: me.name, j: (map.get(me.pid) || {}).j || joinedAt, n: myWords.length, sw: myWords });
+  return [...map.values()].sort((a, b) => a.j - b.j || (a.pid < b.pid ? -1 : 1));
+}
+function gatherPool(){
+  const pool = {};
+  if(mode === "local") S.lp.forEach(p => { if(p.sw.length) pool[p.pid] = p.sw.slice(); });
+  else players().forEach(p => { if(p.sw && p.sw.length) pool[p.pid] = p.sw.slice(); });
+  return pool;
+}
+const totalWords = () => players().reduce((n, p) => n + p.n, 0);
+const present = pid => players().some(p => p.pid === pid);
+const nameOf = pid => (players().find(p => p.pid === pid) || {}).name || (S.scores[pid] || {}).n || "Someone";
+const isGuesserDevice = () => mode === "local" || S.guesser === me.pid;
+function withScores(sc){
+  const out = { ...sc };
+  players().forEach(p => { out[p.pid] = { n: p.name, s: out[p.pid] ? out[p.pid].s : 0 }; });
+  return out;
+}
+function nextPlayer(){
+  const list = players();
+  if(!list.length) return null;
+  const i = list.findIndex(p => p.pid === S.guesser);
+  return list[(i + 1) % list.length];
+}
+
+/* ---------- Sync (Supabase Realtime presence; no tables, no logins) ---------- */
+const SB_URL = "https://tawewgpesnvuzscbltcg.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhd2V3Z3Blc252dXpzY2JsdGNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ2NDcxNzgsImV4cCI6MjExMDIyMzE3OH0.7-IrOec4VYeh6D6MIJdogFAfCw_20oAO0MIsdxlco5w";
+const tabId = rid();
+let sb = null, chan = null;
+function updateConn(){
+  const el = $(".conn");
+  if(el){ el.classList.toggle("off", !connected); el.lastChild.textContent = connected ? "Live" : "Reconnecting"; }
+}
+function connectRoom(code){
+  if(chan){ const old = chan; chan = null; try { sb.removeChannel(old); } catch(e){} }
+  connected = false;
+  const c = sb.channel("fc-" + code.toLowerCase(), { config: { presence: { key: tabId }, broadcast: { self: false } } });
+  chan = c;
+  c.on("broadcast", { event: "st" }, msg => { if(chan === c) onState(msg && msg.payload); });
+  c.on("presence", { event: "sync" }, () => {
+    if(chan !== c) return;
+    const st = c.presenceState(), peers = [];
+    Object.keys(st).forEach(k => { const arr = st[k] || [], m = arr[arr.length - 1]; if(m) peers.push({ presence: m, sameTab: k === tabId }); });
+    onPeers({ peers });
+  });
+  c.on("presence", { event: "join" }, x => { if(chan === c && S.v > 0 && x.key !== tabId) healSoon(); }); // catch up a newcomer
+  c.subscribe(status => {
+    if(chan !== c) return;
+    connected = status === "SUBSCRIBED";
+    updateConn();
+    if(connected){ trackMe(true); if(S.v > 0) publish(); }
+    else if(status === "CLOSED" && mode === "online" && roomCode === code){
+      setTimeout(() => { if(chan === c && mode === "online") connectRoom(code); }, 2500); // server closed us: rejoin
+    }
+  });
+}
+// Safety net for dropped messages: the first player re-sends the game every few seconds.
+setInterval(() => {
+  if(mode === "online" && connected && S.v > 0){ const f = players()[0]; if(f && f.pid === me.pid) publish(); }
+}, 4000);
+// Game state travels as broadcast messages (fast, high rate limit).
+function publish(){
+  if(mode !== "online" || !chan || !connected) return;
+  const st = { ...S }; delete st.lp;
+  try { chan.send({ type: "broadcast", event: "st", payload: { code: roomCode, st } }); } catch(e){}
+}
+let healT = null;
+function healSoon(){ if(!healT) healT = setTimeout(() => { healT = null; publish(); }, 300 + Math.random() * 600); }
+// Who is here and their word list travel as presence, which Supabase rate-limits hard, so it is sent rarely.
+let trackT = null;
+function trackMe(now){
+  clearTimeout(trackT);
+  const run = () => { if(mode === "online" && chan && connected){ try { chan.track({ code: roomCode, pid: me.pid, name: me.name, j: joinedAt, sw: myWords }); } catch(e){} } };
+  if(now) run(); else trackT = setTimeout(run, 2500);
+}
+function commit(patch){
+  S = { ...S, ...patch, v: S.v + 1, w: me.pid };
+  publish();
+  render();
+}
+function adopt(st){
+  const prev = S;
+  S = { ...st, lp: prev.lp };
+  if(prev.phase === "playing" && S.phase === "playing" && S.log.length > prev.log.length) feedback(S.log[S.log.length - 1][1] === 1);
+  if(prev.phase === "playing" && S.phase === "turnover") buzz();
+}
+let lastSig = "";
+function onState(payload){
+  if(!payload || payload.code !== roomCode) return;
+  const st = clean(payload.st);
+  if(!st) return;
+  if(better(st, S)){ adopt(st); render(); }
+  else if(S.v > 0 && better(S, st)) healSoon(); // they are behind: send them ours
+}
+function onPeers(ch){
+  peersList = ch.peers;
+  const sig = S.v + "|" + S.w + "|" + players().map(p => p.pid + p.name + p.n).join(",");
+  if(sig !== lastSig && screen === "game"){ lastSig = sig; render(); }
+}
+
+/* ---------- Sound, flash, wake lock, tilt ---------- */
+let ac = null;
+function audio(){ try { if(!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if(ac.state === "suspended") ac.resume(); } catch(e){} }
+function tone(f, d, type, when, vol){
+  if(!ac) return;
+  try {
+    const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + (when || 0);
+    o.type = type || "sine"; o.frequency.value = f;
+    g.gain.setValueAtTime(vol || .16, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + d + .03);
+  } catch(e){}
+}
+const vib = p => { try { navigator.vibrate && navigator.vibrate(p); } catch(e){} };
+let flashTimer = null;
+function feedback(ok){
+  const f = $("#flash");
+  f.className = ok ? "ok" : "no";
+  f.firstElementChild.textContent = ok ? "Got it!" : "Pass";
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => { f.className = ""; }, 420);
+  if(ok){ tone(784, .12, "triangle"); tone(1175, .2, "triangle", .1); vib(60); }
+  else { tone(220, .25, "sawtooth", 0, .08); vib([30, 40, 30]); }
+}
+function buzz(){ tone(150, .7, "square", 0, .07); vib(300); }
+
+let wakeLock = null;
+async function keepAwake(){ try { if(navigator.wakeLock && !wakeLock){ wakeLock = await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release", () => { wakeLock = null; }); } } catch(e){} }
+document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible" && screen === "game") keepAwake(); });
+
+let tiltSeen = false, tiltArmed = true, tiltBound = false;
+function enableTilt(){
+  try { const DM = window.DeviceMotionEvent; if(DM && typeof DM.requestPermission === "function") DM.requestPermission().catch(() => {}); } catch(e){}
+  if(tiltBound) return;
+  tiltBound = true;
+  window.addEventListener("devicemotion", e => {
+    const g = e.accelerationIncludingGravity;
+    if(!g || typeof g.z !== "number") return;
+    if(!tiltSeen){ tiltSeen = true; const n = $(".tiltnote"); if(n) n.hidden = false; }
+    if(!isGuesserDevice() || S.phase !== "playing") return;
+    if(Math.abs(g.z) < 3){ tiltArmed = true; return; }
+    if(!tiltArmed) return;
+    if(g.z < -7){ tiltArmed = false; mark(true); }       // screen tipped toward the floor
+    else if(g.z > 7){ tiltArmed = false; mark(false); }  // screen tipped toward the ceiling
+  });
+}
+
+/* ---------- Game actions ---------- */
+function canStart(){ return players().length >= 2 && totalWords() >= MIN_POOL; }
+function startGame(){
+  if(!canStart()) return;
+  commit({ phase:"ready", guesser: players()[0].pid, scores: withScores({}), turnNo: 0, log: [], pool: gatherPool(), used: [], cur: -1 });
+}
+function beginTurn(){
+  keepAwake(); enableTilt();
+  const now = Date.now(), p = pick(S.used, S.guesser);
+  commit({ phase:"playing", startAt: now + 3000, endsAt: now + 3000 + S.secs * 1000, log: [], scores: withScores(S.scores), cur: p.cur, used: p.used });
+}
+let lastMark = 0;
+function mark(ok){
+  const now = Date.now();
+  if(S.phase !== "playing" || S.cur < 0 || now < S.startAt || now >= S.endsAt || now - lastMark < 450) return;
+  lastMark = now;
+  const g = S.guesser, scores = { ...S.scores }, c = scores[g] || { n: nameOf(g), s: 0 };
+  if(ok) scores[g] = { n: c.n, s: c.s + 1 };
+  const p = pick(S.used, g);
+  commit({ log: [...S.log, [S.cur, ok ? 1 : 0]].slice(-40), scores, cur: p.cur, used: p.used.slice(-200) });
+  feedback(ok);
+}
+function endTurn(){ if(S.phase !== "playing") return; buzz(); commit({ phase:"turnover", endsAt: Math.min(S.endsAt, Date.now()) }); }
+function nextTurn(){
+  const n = nextPlayer();
+  if(n) commit({ phase:"ready", guesser: n.pid, turnNo: S.turnNo + 1, log: [], scores: withScores(S.scores) });
+}
+function endGame(){ commit({ phase:"final" }); }
+function backToLobby(){ commit({ phase:"lobby", scores:{}, log:[], guesser:null, pool:{}, used:[], cur:-1 }); }
+
+function saveMyWords(){ lsSet("fc-words", myWords); trackMe(false); render(); }
+function addWord(list, raw){
+  const w = cleanWord(raw);
+  if(!w || list.length >= MAX_WORDS || list.some(x => x.toLowerCase() === w.toLowerCase())) return list;
+  return [...list, w];
+}
+
+async function joinRoom(code){
+  code = String(code || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+  if(code.length < 4){ homeErr = "Room codes are 4 letters."; render(); return; }
+  if(!sb){ homeErr = "Can't reach the game server. Check your internet, or play on one phone."; render(); return; }
+  roomCode = code; mode = "online"; joinedAt = Date.now(); S = defaultState(); lastSig = "";
+  screen = "game"; homeErr = "";
+  lsSet("fc-last", { code, t: Date.now() });
+  keepAwake();
+  connectRoom(code);
+  render();
+}
+function newRoomCode(){
+  const A = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  let c = ""; for(let i = 0; i < 4; i++) c += A[Math.floor(Math.random() * A.length)];
+  return c;
+}
+function leave(){
+  if(chan){ try { chan.untrack(); sb.removeChannel(chan); } catch(e){} chan = null; }
+  lsSet("fc-last", null);
+  mode = null; roomCode = ""; screen = "home"; S = defaultState();
+  render();
+}
+function startLocal(){
+  mode = "local"; screen = "game"; S = defaultState();
+  S.lp = me.name ? [{ pid: me.pid, name: me.name, sw: [] }] : [];
+  render();
+}
+
+/* ---------- Rendering ---------- */
+let logoN = 0;
+const LOGO = sz => { const id = "lg" + (++logoN); return `<svg class="logo" width="${sz}" height="${sz}" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E8A94A"/><stop offset=".55" stop-color="#B79CED"/><stop offset="1" stop-color="#8EC5FF"/></linearGradient></defs><rect width="64" height="64" rx="15" fill="url(#${id})"/><g transform="rotate(-10 32 32)"><rect x="17" y="12" width="30" height="40" rx="6" fill="#F6F4F0"/><text x="32" y="43" text-anchor="middle" font-family="Bricolage Grotesque, Arial Black, sans-serif" font-weight="800" font-size="29" fill="#14110E">?</text></g></svg>`; };
+const plural = (n, w) => n + " " + w + (n === 1 ? "" : "s");
+
+function scoreboard(){
+  const rows = Object.entries(S.scores).sort((a, b) => b[1].s - a[1].s);
+  if(!rows.length) return "";
+  const top = rows[0][1].s;
+  return `<ul class="board">${rows.map(([pid, e]) => `<li class="${e.s === top && top > 0 ? "lead" : ""}"><span>${esc(nameOf(pid))}${pid === me.pid && mode === "online" ? " (you)" : ""}${mode === "online" && !present(pid) ? '<span class="gone">left</span>' : ""}</span><span class="pts">${e.s}</span></li>`).join("")}</ul>`;
+}
+function header(){
+  if(mode === "online") return `<div class="row" style="justify-content:space-between"><div class="brand">${LOGO(36)}<h3>Room <span style="letter-spacing:.08em">${esc(roomCode)}</span></h3></div><span class="conn ${connected ? "" : "off"}"><i></i>${connected ? "Live" : "Reconnecting"}</span></div>`;
+  return `<div class="brand">${LOGO(36)}<h3>One-phone game</h3></div>`;
+}
+function wordEditor(list, inputId, who){
+  return `
+    <div class="row" style="flex-wrap:nowrap">
+      <input id="${inputId}" type="text" maxlength="${MAX_LEN}" autocomplete="off" placeholder="${list.length >= MAX_WORDS ? "That's 10, nice" : "e.g. Uncle Lim's karaoke"}" style="flex:1;min-width:0" ${list.length >= MAX_WORDS ? "disabled" : ""}>
+      <button class="btn alt" data-act="addw" data-who="${esc(who)}" ${list.length >= MAX_WORDS ? "disabled" : ""}>Add</button>
+    </div>
+    ${list.length ? `<ul class="players">${list.map((w, i) => `<li>${esc(w)} <button data-act="rmw" data-who="${esc(who)}" data-i="${i}" aria-label="Remove ${esc(w)}">×</button></li>`).join("")}</ul>` : ""}`;
+}
+
+function renderHome(){
+  const wait = roomStatus === "wait";
+  app.innerHTML = `
+    <div class="glow">
+      ${LOGO(64)}
+      <span class="eyebrow">Party game for phones</span>
+      <h1>Forehead<br>Charades</h1>
+      <p style="color:var(--ink);opacity:.8">Everyone drops their own words into the hat. One person holds a phone to their forehead while the rest act it out, describe it or hum it. Get as many as you can before time runs out.</p>
+    </div>
+    <div class="panel">
+      <div class="field"><label for="name">Your name</label><input id="name" type="text" maxlength="16" autocomplete="nickname" placeholder="e.g. Josh" value="${esc(me.name)}"></div>
+      ${roomStatus === "none" ? `<div class="notice">Can't reach the game server right now. Check your internet connection, or play on one phone and pass it around.</div>` : ""}
+      <button class="btn big" data-act="create" ${wait || roomStatus === "none" ? "disabled" : ""}>${wait ? "Connecting…" : "Start a new room"}</button>
+      <div class="divider">or join friends</div>
+      <div class="row" style="flex-wrap:nowrap">
+        <input id="code" class="code-input" type="text" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="CODE" aria-label="Room code" style="flex:1;min-width:0">
+        <button class="btn alt" data-act="join" ${wait || roomStatus === "none" ? "disabled" : ""}>Join</button>
+      </div>
+      ${homeErr ? `<div class="err">${esc(homeErr)}</div>` : ""}
+    </div>
+    <button class="btn ghost" data-act="local">Play on one phone instead</button>
+    <details class="a2hs"><summary>Add to your home screen</summary>
+      <ol>
+        <li><b>iPhone:</b> open this page in Safari, tap Share, then <b>Add to Home Screen</b>.</li>
+        <li><b>Android:</b> in Chrome, tap the ⋮ menu, then <b>Install app</b> or <b>Add to Home screen</b>.</li>
+        <li>It opens full screen like an app, with its own icon.</li>
+      </ol>
+    </details>`;
+}
+
+function renderLobby(){
+  const list = players(), online = mode === "online", total = totalWords(), ok = canStart();
+  app.innerHTML = `
+    ${header()}
+    ${online ? `<div class="panel center"><span class="eyebrow">Friends join with this code</span><div class="roomcode">${esc(roomCode)}</div><p>Open this page on each phone, tap Join and type the code.</p></div>` : ""}
+    <div class="stack">
+      <div class="row" style="justify-content:space-between"><h3>Players · ${list.length}</h3><span class="eyebrow">${plural(total, "word")} in the hat</span></div>
+      <ul class="players">${list.map(p => online
+        ? `<li class="${p.pid === me.pid ? "me" : ""}">${esc(p.name)}${p.pid === me.pid ? " (you)" : ""} <span style="color:var(--muted);font-weight:400">· ${p.n}</span></li>`
+        : `<li><button data-act="editw" data-pid="${esc(p.pid)}" style="font-weight:600">${esc(p.name)} <span style="color:var(--muted);font-weight:400">· ${p.n} words</span></button><button data-act="rmp" data-pid="${esc(p.pid)}" aria-label="Remove ${esc(p.name)}">×</button></li>`).join("") || `<li style="color:var(--muted)">No players yet</li>`}</ul>
+      ${online ? "" : `<div class="row" style="flex-wrap:nowrap"><input id="pname" type="text" maxlength="16" placeholder="Add a player" style="flex:1;min-width:0"><button class="btn alt" data-act="addp">Add</button></div>
+      <p style="font-size:14px">Tap a name to add that player's words. Everyone else looks away.</p>`}
+    </div>
+    ${online ? `<div class="panel">
+      <div class="row" style="justify-content:space-between"><h3>Your words</h3><span style="color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums">${myWords.length}/${MAX_WORDS}</span></div>
+      <p style="font-size:14px">Add people, places, movies or inside jokes for the others to guess. Only you see this list, and you'll never get your own words.</p>
+      ${wordEditor(myWords, "myword", "me")}
+    </div>` : ""}
+    <div class="stack">
+      <h3>Seconds per turn</h3>
+      <div class="seg">${ROUND_OPTS.map(s => `<button data-act="secs" data-s="${s}" aria-pressed="${S.secs === s}">${s}</button>`).join("")}</div>
+    </div>
+    <button class="btn big" data-act="start" ${ok ? "" : "disabled"}>Start game</button>
+    ${!ok ? `<p style="text-align:center;font-size:14px">${list.length < 2 ? (online ? "Waiting for at least one more phone to join." : "Add at least 2 players.") : `Add at least ${MIN_POOL} words to the hat to start.`}</p>` : ""}
+    <button class="btn ghost" data-act="leave">${online ? "Leave room" : "Back"}</button>`;
+}
+
+function renderLocalWords(){
+  const p = S.lp.find(x => x.pid === editPid);
+  if(!p){ screen = "game"; return render(); }
+  app.innerHTML = `
+    ${header()}
+    <div class="stack center"><span class="eyebrow">Everyone else, look away</span><div class="hero-name">${esc(p.name)}'s words</div></div>
+    <div class="panel">
+      <div class="row" style="justify-content:space-between"><h3>Words</h3><span style="color:var(--muted);font-size:14px">${p.sw.length}/${MAX_WORDS}</span></div>
+      <p style="font-size:14px">${esc(p.name)} won't get these when it's their turn.</p>
+      ${wordEditor(p.sw, "lword", p.pid)}
+    </div>
+    <button class="btn big" data-act="donew">Done, hide my words</button>`;
+}
+
+function renderReady(){
+  const gName = nameOf(S.guesser), mine = isGuesserDevice();
+  const missing = mode === "online" && !present(S.guesser);
+  app.innerHTML = `
+    ${header()}
+    ${mine ? `
+      <div class="stack center" style="padding-top:8px">
+        <span class="eyebrow">${mode === "local" ? "Pass the phone to" : "You're up"}</span>
+        <div class="hero-name">${esc(gName)}</div>
+      </div>
+      <div class="panel">
+        <ol class="steps">
+          <li>Turn the phone sideways and hold it on your forehead, screen facing out.</li>
+          <li>Tap the <b class="ok">right side</b> when you guess it. Tap the <b class="no">left side</b> to pass.</li>
+          <li>You have ${S.secs} seconds. A 3-second countdown starts first.</li>
+        </ol>
+      </div>
+      <button class="btn big" data-act="begin">I'm ready, start</button>` : `
+      <div class="stack center" style="padding-top:8px">
+        <span class="eyebrow">Next guesser</span>
+        <div class="hero-name">${esc(gName)}</div>
+        <p>When ${esc(gName)} starts, the word appears on your phone. Act it out, describe it, hum it. Just don't say it.</p>
+      </div>
+      ${missing ? `<button class="btn alt" data-act="next">${esc(gName)} left · skip to next player</button>` : ""}`}
+    <div class="panel"><h3>Scores</h3>${scoreboard()}</div>
+    <button class="btn ghost" data-act="end">End game</button>`;
+}
+
+function renderPlaying(){
+  const now = Date.now(), counting = now < S.startAt;
+  const left = Math.max(0, Math.ceil((S.endsAt - now) / 1000));
+  const word = S.cur >= 0 ? wordOf(S.cur) : "Out of words";
+  const got = S.log.filter(e => e[1]).length;
+  if(isGuesserDevice()){
+    if(counting){
+      app.innerHTML = `<div class="forehead"><button class="fh-x" data-act="endturn">End</button><p style="font-weight:700;color:var(--ink)">On your forehead</p><div class="countdown">${Math.ceil((S.startAt - now) / 1000)}</div></div>`;
+      return;
+    }
+    app.innerHTML = `
+      <div class="forehead">
+        <button class="zone zone-pass" data-zone="pass" aria-label="Pass"><span>Pass</span></button>
+        <button class="zone zone-ok" data-zone="ok" aria-label="Got it"><span>Got it</span></button>
+        <button class="fh-x" data-act="endturn">End</button>
+        <span class="tiltnote" ${tiltSeen ? "" : "hidden"}>Tilt on</span>
+        <div class="fh-top"><span class="timer ${left <= 10 ? "low" : ""}" id="t">${left}</span><span class="fh-count">${got} correct</span></div>
+        <div class="fh-word" style="font-size:${fitSize(word, .9, .4, 200)}px">${esc(word)}</div>
+      </div>`;
+    return;
+  }
+  const gName = nameOf(S.guesser), by = authorOf(S.cur);
+  app.innerHTML = `
+    <div class="hint-top"><div><span class="eyebrow">Guessing</span><b>${esc(gName)}</b></div><span class="timer ${left <= 10 && !counting ? "low" : ""}" id="t">${counting ? S.secs : left}</span></div>
+    ${counting ? `<div class="stack center" style="padding:30px 0"><p>Starting in</p><div class="countdown" style="font-size:120px">${Math.ceil((S.startAt - now) / 1000)}</div><p>Get ready to give hints.</p></div>` : `
+    <div class="hintcard">
+      <span class="eyebrow">Get ${esc(gName)} to say</span>
+      <div class="hint-word" style="font-size:${fitSize(word, .78, .22, 96)}px">${esc(word)}</div>
+      ${by ? `<span class="catlabel">From ${esc(by === me.pid ? "you" : nameOf(by))}</span>` : ""}
+    </div>
+    <h3>${got} correct this turn</h3>
+    ${S.log.length ? `<ul class="results">${S.log.slice().reverse().slice(0, 8).map(e => `<li class="k${e[1]}">${esc(wordOf(e[0]))}</li>`).join("")}</ul>` : `<p>Only ${esc(gName)}'s phone marks correct or pass.</p>`}`}
+    <button class="btn ghost" data-act="endturn">End turn early</button>`;
+}
+
+function renderTurnover(){
+  const gName = nameOf(S.guesser), got = S.log.filter(e => e[1]).length, n = nextPlayer();
+  app.innerHTML = `
+    ${header()}
+    <div class="stack center">
+      <span class="eyebrow">Time's up</span>
+      <div class="bigstat">${got}</div>
+      <h2>${esc(gName)} got ${plural(got, "word")}</h2>
+    </div>
+    ${S.log.length ? `<ul class="results" style="justify-content:center">${S.log.map(e => `<li class="k${e[1]}">${esc(wordOf(e[0]))}</li>`).join("")}</ul>` : ""}
+    <div class="panel"><h3>Scores</h3>${scoreboard()}</div>
+    ${n ? `<button class="btn big" data-act="next">Next: ${esc(n.name)}</button>` : ""}
+    <button class="btn alt" data-act="end">End game</button>`;
+}
+
+function renderFinal(){
+  const rows = Object.entries(S.scores).sort((a, b) => b[1].s - a[1].s);
+  const top = rows.length ? rows[0][1].s : 0;
+  const winners = rows.filter(r => r[1].s === top && top > 0).map(r => nameOf(r[0]));
+  app.innerHTML = `
+    ${header()}
+    <div class="stack center" style="padding-top:8px">
+      <span class="eyebrow">${winners.length > 1 ? "It's a tie" : "Winner"}</span>
+      <div class="hero-name">${winners.length ? esc(winners.join(" & ")) : "Nobody yet"}</div>
+      ${top ? `<p>${plural(top, "word")} guessed</p>` : ""}
+    </div>
+    <div class="panel"><h3>Final scores</h3>${scoreboard() || "<p>No scores.</p>"}</div>
+    <button class="btn big" data-act="lobby">Play again</button>
+    <button class="btn ghost" data-act="leave">${mode === "online" ? "Leave room" : "Back to start"}</button>`;
+}
+
+function render(){
+  // keep anything being typed when another phone's update redraws the screen
+  const keep = {}; app.querySelectorAll("input[id]").forEach(i => { keep[i.id] = i.value; });
+  const focusId = document.activeElement && document.activeElement.id;
+  if(screen === "home") renderHome();
+  else if(screen === "words") renderLocalWords();
+  else ({ lobby: renderLobby, ready: renderReady, playing: renderPlaying, turnover: renderTurnover, final: renderFinal })[S.phase]();
+  Object.keys(keep).forEach(id => { const el = document.getElementById(id); if(el && !el.disabled && id !== "name") el.value = keep[id]; });
+  if(focusId){ const el = document.getElementById(focusId); if(el && !el.disabled) el.focus(); }
+}
+
+/* ---------- Input ---------- */
+function readName(){
+  const el = $("#name");
+  const v = el ? el.value.trim().slice(0, 16) : me.name;
+  if(!v){ homeErr = "Type your name first."; render(); const n = $("#name"); if(n) n.focus(); return false; }
+  me.name = v; lsSet("fc-me", me); return true;
+}
+app.addEventListener("input", e => { if(e.target.id === "name"){ me.name = e.target.value.trim().slice(0, 16); lsSet("fc-me", me); } });
+app.addEventListener("keydown", e => {
+  if(e.key !== "Enter") return;
+  const map = { code: "join", pname: "addp", myword: "addw", lword: "addw" };
+  const act = map[e.target.id];
+  if(act){ e.preventDefault(); const b = $(`[data-act="${act}"]`); if(b && !b.disabled) b.click(); }
+});
+app.addEventListener("pointerdown", e => {
+  const z = e.target.closest("[data-zone]");
+  if(!z) return;
+  e.preventDefault(); audio();
+  mark(z.dataset.zone === "ok");
+});
+app.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]");
+  if(!b || b.disabled) return;
+  audio();
+  const a = b.dataset.act;
+  if(a === "create"){ if(readName()) joinRoom(newRoomCode()); }
+  else if(a === "join"){ if(readName()) joinRoom(($("#code") || {}).value); }
+  else if(a === "local"){ const el = $("#name"); if(el && el.value.trim()){ me.name = el.value.trim().slice(0, 16); lsSet("fc-me", me); } startLocal(); }
+  else if(a === "leave") leave();
+  else if(a === "addp"){
+    const el = $("#pname"), v = el ? el.value.trim().slice(0, 16) : "";
+    if(v){ S.lp = [...S.lp, { pid: rid(), name: v, sw: [] }]; if(el) el.value = ""; render(); }
+  }
+  else if(a === "rmp"){ S.lp = S.lp.filter(p => p.pid !== b.dataset.pid); render(); }
+  else if(a === "editw"){ editPid = b.dataset.pid; screen = "words"; render(); }
+  else if(a === "donew"){ editPid = null; screen = "game"; render(); }
+  else if(a === "addw"){
+    if(b.dataset.who === "me"){
+      const el = $("#myword"); myWords = addWord(myWords, el && el.value); if(el) el.value = ""; saveMyWords();
+    } else {
+      const el = $("#lword"), p = S.lp.find(x => x.pid === b.dataset.who);
+      if(p){ p.sw = addWord(p.sw, el && el.value); if(el) el.value = ""; render(); }
+    }
+  }
+  else if(a === "rmw"){
+    const i = Number(b.dataset.i);
+    if(b.dataset.who === "me"){ myWords = myWords.filter((_, k) => k !== i); saveMyWords(); }
+    else { const p = S.lp.find(x => x.pid === b.dataset.who); if(p){ p.sw = p.sw.filter((_, k) => k !== i); render(); } }
+  }
+  else if(a === "secs") commit({ secs: Number(b.dataset.s) });
+  else if(a === "start") startGame();
+  else if(a === "begin") beginTurn();
+  else if(a === "endturn") endTurn();
+  else if(a === "next") nextTurn();
+  else if(a === "end") endGame();
+  else if(a === "lobby") backToLobby();
+});
+
+/* ---------- Clock ---------- */
+let lastKey = "", lastTick = -1;
+setInterval(() => {
+  if(screen !== "game" || S.phase !== "playing") { lastKey = ""; return; }
+  const now = Date.now(), counting = now < S.startAt;
+  const key = counting ? "c" + Math.ceil((S.startAt - now) / 1000) : "p" + S.log.length;
+  if(key !== lastKey){
+    if(counting) tone(660, .1, "sine");
+    else if(lastKey.charAt(0) === "c") tone(990, .3, "triangle");
+    lastKey = key; render();
+  }
+  if(!counting){
+    const left = Math.max(0, Math.ceil((S.endsAt - now) / 1000));
+    const t = $("#t");
+    if(t && t.textContent !== String(left)){ t.textContent = left; t.classList.toggle("low", left <= 10); }
+    if(left <= 5 && left > 0 && left !== lastTick){ lastTick = left; tone(520, .07, "sine", 0, .1); }
+  }
+  if(now >= S.endsAt){
+    if(isGuesserDevice()) endTurn();
+    else if(mode === "online" && !present(S.guesser) && now >= S.endsAt + 2000){
+      const first = players()[0];
+      if(first && first.pid === me.pid) endTurn();
+    }
+  }
+}, 150);
+window.addEventListener("resize", () => { if(screen === "game" && S.phase === "playing") render(); });
+
+/* ---------- Boot ---------- */
+try { if(window.supabase && window.supabase.createClient) sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: false, autoRefreshToken: false } }); } catch(e){ sb = null; }
+roomStatus = sb ? "ok" : "none";
+render();
+if(sb){
+  const last = lsGet("fc-last", null);
+  if(last && last.code && me.name && Date.now() - last.t < 3 * 3600 * 1000) joinRoom(last.code);
+}
+if("serviceWorker" in navigator) window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+})();
+</script>
+</body>
+</html>
